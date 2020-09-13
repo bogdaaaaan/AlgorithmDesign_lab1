@@ -1,127 +1,178 @@
-﻿// Bogdan Glechkovskiy IP-92
-#include <iostream>
-#include <fstream>
-#include <ctime>
-
-const int N = 20; //count numbers in file
+﻿#include <iostream>
+#include <queue>
+#include <direct.h>
+#include "fileMaking.h"
 
 using namespace std;
 
-void CreateFile();
-void DivideOnFiles();
-//void CombineFromThreeFiles();
-
-int main() {
-    // CreateFile();
-    DivideOnFiles();
-    return 0;
-}
-
-void DivideOnFiles() {
-    ifstream fin("File.txt");
-    if (!fin.is_open()){ return; }
-
-    ofstream fout_b1("b1.txt");
-    ofstream fout_b2("b2.txt");
-    ofstream fout_b3("b3.txt");
-
-    int temp, next_temp, flag = 1;
-    fin >> temp;
-    fout_b1 << temp << " ";
-    while (!fin.eof())
-    {
-        fin >> next_temp;
-        if (!(next_temp >= temp))
-        {
-            flag++;
-            if (flag > 3)
-            {
-                flag -= 3;
-            }
-        }
-        temp = next_temp;
-        if (flag == 1)
-        {
-            fout_b1 << next_temp << " ";
-        }
-        if (flag == 2)
-        {
-            fout_b2 << next_temp << " ";
-        }
-        if (flag == 3)
-        {
-            fout_b3 << next_temp << " ";
-        }
-    }
-   
-    fin.close();
-    fout_b1.close();
-    fout_b2.close();
-    fout_b3.close();
-}
-
-void CreateFile() {
-    //srand(time(NULL));
-    ofstream fout("File.txt");
-    for (int i = 0; i < N; i++)
-    {
-        if (i != N-1)
-        {
-            fout << rand() % (N - 1) + 1 << " ";
-        }
-        else
-        {
-            fout << rand() % (N - 1) + 1;
-        }
-       
-    }
-    fout.close();
-}
-
-
-/*
-void CombineFromThreeFiles()
+// Базовый файл с данными
+class BaseFile
 {
-    ifstream fin_b1("b1.txt");
-    ifstream fin_b2("b2.txt");
-    ifstream fin_b3("b3.txt");
-    ofstream fout_c1("c1.txt");
-    ofstream fout_c2("c2.txt");
-    ofstream fout_c3("c3.txt");
+public:
+	BaseFile(string file);
+	~BaseFile();
+	void sort();
+	queue<string> getfiles() {
+		return _queue;
+	};
+protected:
+	string NameOfFile;
+	queue<string> _queue;
+};
 
-    bool end = false;
-    int temp1, temp2, temp3, next_temp1,next_temp2, next_temp3;
-    int flag = 1;
-    fin_b1 >> temp1;
-    fin_b2 >> temp2;
-    fin_b3 >> temp3;
-
-    while (!end)
-    {
-        int temp_min = min(temp1, temp2, temp3);
-        if (flag == 1)
-        {
-            fout_c3 << temp_min;
-            fin_b1 >> temp1;
-        }
-        if (flag == 2)
-        {
-            fout_c2 << temp_min;
-            fin_b2 >> temp2;
-        }
-        if (flag == 3)
-        {
-            fout_c3 << temp_min;
-            fin_b3 >> temp3;
-        }
-    }
-
-
-    fin_b1.close();
-    fin_b2.close();
-    fin_b3.close();
-    fout_c1.close();
-    fout_c2.close();
-    fout_c3.close();
+BaseFile::BaseFile(string file)
+{
+	NameOfFile = file;
 }
-*/
+
+BaseFile::~BaseFile()
+{
+}
+void BaseFile::sort()
+{
+	ifstream fin(NameOfFile);
+	int temp, iter = 1, num = 0;
+	string fileNames = "tests\\b";
+	// Пока не конец основного файла
+	while (!fin.eof()) {
+		fin >> num;
+		// Создаем вспомогательные файлы и вносим их в очередь
+		fileNames += to_string(iter);
+		fileNames += ".txt";
+		_queue.push(fileNames);
+
+		ofstream fout(fileNames);
+		for (int i = 0; i < num; i++) {
+			fin >> temp;
+			fout << temp;
+			if (i < num - 1) {
+				fout << " ";
+			}
+		}
+		fout.close();
+		fileNames = "tests\\b";
+		iter++;
+	}
+}
+
+// Доп. файлы
+class AdditionalFiles
+{
+public:
+	AdditionalFiles(queue<string> inf);
+	~AdditionalFiles();
+	void sorting();
+	string getresult() {
+		return _queue.front();
+	}
+protected:
+	queue<string> _queue;
+	int i = 0;
+};
+
+AdditionalFiles::AdditionalFiles(queue<string> inf)
+{
+	_queue = inf;
+}
+
+AdditionalFiles::~AdditionalFiles()
+{
+}
+
+void AdditionalFiles::sorting()
+{
+	string fileNames = "tests\\c";
+	int temp1 = 0, temp2 = 0, iter = 1;
+	string file1, file2;
+	bool first, second;
+	while (_queue.size() > 1) {
+		first = true;
+		second = true;
+		file1 = _queue.front();
+		_queue.pop();
+		file2 = _queue.front();
+		_queue.pop();
+		ifstream fin1(file1);
+		ifstream fin2(file2);
+		fileNames += to_string(iter);
+		fileNames += ".txt";
+		ofstream fout(fileNames);
+		_queue.push(fileNames);
+		while (!fin1.eof() && !fin2.eof()) {
+
+			if (first) {
+				fin1 >> temp1; 
+			}
+			if (second) {
+				fin2 >> temp2;
+			}
+			if (temp2 > temp1) { 
+				fout << " " << temp1;
+				second = false; 
+				first = true;
+			}
+			else if (temp2 == temp1) {
+				fout << " " << temp1 << " " << temp2;
+				first = true;
+				second = true; 
+			}
+			else {
+				fout << " " << temp2;
+				second = true; 
+				first = false;
+			}
+
+			if (fin1.eof()) {
+				while (!fin2.eof()) {
+					fin2 >> temp2;
+					fout << " " << temp2; 
+				}
+			}
+			if (fin2.eof()) {
+				while (!fin1.eof()) {
+					fin1 >> temp1;
+					fout << " " << temp1;
+				}
+			}
+
+		}
+		fin1.close();
+		fin2.close(); 
+		fout.close();
+		fileNames = "tests\\c";
+		iter++;
+	}
+	
+}
+
+void makeResult(string fileName) {
+	ifstream fin(fileName);
+	ofstream fout("Result.txt");
+	int x;
+	while (!fin.eof())
+	{
+		fin >> x;
+		fout << x << " ";
+	}
+}
+
+int main()
+{
+
+	string filename = CreateFile(20);
+
+	//string filename = "File.txt";
+	compileFile(filename);
+	string fileName = makeFile();
+	
+
+	BaseFile base_file(fileName);
+	// Разбиение по доп. файлам
+	base_file.sort();
+
+	AdditionalFiles additional_files(base_file.getfiles());
+	// Присоединение серий
+	additional_files.sorting();
+	makeResult(additional_files.getresult());
+}
+
